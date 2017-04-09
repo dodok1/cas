@@ -31,7 +31,7 @@ public final class RadiusUtils {
      * @param servers                         the servers
      * @param failoverOnAuthenticationFailure the failover on authentication failure
      * @param failoverOnException             the failover on exception
-     * @return the pair
+     * @return the pair indicating completed login in
      * @throws Exception the exception
      */
     public static Pair<Boolean, Optional<Map<String, Object>>> authenticate(final String username, final String password,
@@ -48,7 +48,7 @@ public final class RadiusUtils {
                     for (final RadiusAttribute attribute : response.getAttributes()) {
                         attributes.put(attribute.getAttributeName(), attribute.getValue().toString());
                     }
-                    return new Pair<>(Boolean.TRUE, Optional.of(attributes));
+                    return new Pair<>(response.getCode() == 2, Optional.of(attributes));
                 }
 
                 if (!failoverOnAuthenticationFailure) {
