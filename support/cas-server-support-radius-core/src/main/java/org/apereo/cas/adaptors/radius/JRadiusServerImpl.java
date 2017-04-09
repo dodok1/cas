@@ -2,6 +2,8 @@ package org.apereo.cas.adaptors.radius;
 
 
 import net.jradius.client.RadiusClient;
+import net.jradius.client.auth.PAPAuthenticator;
+import net.jradius.client.auth.RadiusAuthenticator;
 import net.jradius.dictionary.Attr_NASIPAddress;
 import net.jradius.dictionary.Attr_NASIPv6Address;
 import net.jradius.dictionary.Attr_NASIdentifier;
@@ -11,18 +13,20 @@ import net.jradius.dictionary.Attr_NASPortType;
 import net.jradius.dictionary.Attr_UserName;
 import net.jradius.dictionary.Attr_UserPassword;
 import net.jradius.dictionary.vsa_redback.Attr_NASRealPort;
+import net.jradius.exception.RadiusException;
 import net.jradius.packet.AccessAccept;
+import net.jradius.packet.AccessChallenge;
 import net.jradius.packet.AccessRequest;
 import net.jradius.packet.RadiusPacket;
 import net.jradius.packet.attribute.AttributeFactory;
 import net.jradius.packet.attribute.AttributeList;
-import net.jradius.packet.attribute.RadiusAttribute;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
+import java.security.NoSuchAlgorithmException;
+
 
 /**
  * Implementation of a RadiusServer that utilizes the JRadius packages available
@@ -121,7 +125,7 @@ public class JRadiusServerImpl implements RadiusServer {
         if (this.nasPortId != -1) {
             attributeList.add(new Attr_NASPortId(this.nasPortId));
         }
-        if (StringUtils.isNotBlank(this.nasIdentifier)) {
+        if  (StringUtils.isNotBlank(this.nasIdentifier)) {
             attributeList.add(new Attr_NASIdentifier(this.nasIdentifier));
         }
         if (this.nasRealPort != -1) {
@@ -135,23 +139,26 @@ public class JRadiusServerImpl implements RadiusServer {
         try {
             client = this.radiusClientFactory.newInstance();
             final AccessRequest request = new AccessRequest(client, attributeList);
-            final RadiusPacket response = client.authenticate(
+            // FIXME this code should be called only in specific case of PAP protocol with RSA SecureId server
+            final RadiusPacket response = authenticate(client,
                     request,
                     RadiusClient.getAuthProtocol(this.protocol.getName()),
                     this.retries);
 
             LOGGER.debug("RADIUS response from [{}]: [{}]",
                     client.getRemoteInetAddress().getCanonicalHostName(),
-                    response.getClass().getName());
+                    response.toString(true, true));
 
             if (response instanceof AccessAccept) {
-                final List<RadiusAttribute> attributes = response.getAttributes().getAttributeList();
-                LOGGER.debug("Radius response code [{}] accepted with attributes [{}] and identifier [{}]",
-                        response.getCode(), attributes, response.getIdentifier());
-                
-                return new RadiusResponse(response.getCode(),
-                        response.getIdentifier(),
-                        attributes);
+                final AccessAccept acceptedResponse = (AccessAccept) response;
+
+                return new RadiusResponse(acceptedResponse.getCode(),
+                        acceptedResponse.getIdentifier(),
+                        acceptedResponse.getAttributes().getAttributeList());
+            } else if (response instanceof AccessChallenge) {
+                final AccessChallenge challenge = (AccessChallenge) response;
+                return new RadiusResponse(challenge.getCode(), challenge.getIdentifier(),
+                        challenge.getAttributes().getAttributeList());
             }
             LOGGER.debug("Response is not recognized");
         } finally {
@@ -160,6 +167,21 @@ public class JRadiusServerImpl implements RadiusServer {
             }
         }
         return null;
+    }
+
+    /**
+     * Local implementation of RADIUS authentication that accepts AccessChallenge as valid response.
+     *
+     */
+    private net.jradius.packet.RadiusResponse authenticate(RadiusClient client, AccessRequest p, RadiusAuthenticator auth, int retries)
+            throws RadiusException, NoSuchAlgorithmException
+    {
+        if (auth == null) auth = new PAPAuthenticator();
+
+        auth.setupRequest(client, p);
+        auth.processRequest(p);
+
+        return client.sendReceive(p, retries);
     }
 
     /**

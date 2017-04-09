@@ -1,6 +1,7 @@
 package org.apereo.cas.adaptors.radius.authentication.handler.support;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apereo.cas.adaptors.radius.TokenChangeException;
 import org.apereo.cas.adaptors.radius.RadiusServer;
 import org.apereo.cas.adaptors.radius.RadiusUtils;
 import org.apereo.cas.authentication.HandlerResult;
@@ -69,19 +70,20 @@ public class RadiusAuthenticationHandler extends AbstractUsernamePasswordAuthent
     protected HandlerResult authenticateUsernamePasswordInternal(final UsernamePasswordCredential credential, final String originalPassword)
             throws GeneralSecurityException, PreventedException {
 
+        final String username = credential.getUsername();
+        final Pair<Boolean, Optional<Map<String, Object>>> result;
         try {
-            final String username = credential.getUsername();
-            final Pair<Boolean, Optional<Map<String, Object>>> result =
-                    RadiusUtils.authenticate(username, credential.getPassword(), this.servers,
-                            this.failoverOnAuthenticationFailure, this.failoverOnException);
-            if (result.getKey()) {
-                return createHandlerResult(credential,
-                        this.principalFactory.createPrincipal(username, result.getValue().get()),
-                        new ArrayList<>());
-            }
-            throw new FailedLoginException("Radius authentication failed for user " + username);
-        } catch (final Exception e) {
+            result = RadiusUtils.authenticate(username, credential.getPassword(), this.servers,
+                    this.failoverOnAuthenticationFailure, this.failoverOnException);
+        } catch (Exception e) {
             throw new FailedLoginException("Radius authentication failed " + e.getMessage());
         }
+        if (result.getLeft()) {
+            return createHandlerResult(credential, this.principalFactory.createPrincipal(username, result.getRight().get()),
+                    new ArrayList<>());
+        } else if (result.getRight().isPresent()){
+            throw new TokenChangeException((String) result.getRight().get().getOrDefault("Reply-Message", null));
+        }
+        throw new FailedLoginException("Radius authentication failed for user " + username);
     }
 }
