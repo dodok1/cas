@@ -29,7 +29,13 @@
     <action-state id="realSubmitRadius">
         <evaluate expression="radiusAuthenticationWebflowAction" />
         <transition on="success" to="success" />
-        <transition on="error" to="initializeLoginForm" />
+        <transition on="error" to="handleError" />
+        <transition on="tokenChange" to="viewLoginFormRadius" />
+    </action-state>
+
+    <action-state id="handleError">
+        <evaluate expression="authenticationExceptionHandler.handle(currentEvent.attributes.error, messageContext)"/>
+        <transition to="initializeLoginForm"/>
     </action-state>
 
     <end-state id="success" />
