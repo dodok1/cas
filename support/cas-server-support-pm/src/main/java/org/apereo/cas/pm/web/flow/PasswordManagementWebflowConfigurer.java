@@ -55,7 +55,7 @@ public class PasswordManagementWebflowConfigurer extends AbstractCasWebflowConfi
                     CasWebflowConstants.VIEW_ID_INVALID_AUTHENTICATION_HOURS);
             createViewState(flow, CasWebflowConstants.VIEW_ID_ACCOUNT_LOCKED, CasWebflowConstants.VIEW_ID_ACCOUNT_LOCKED);
             createViewState(flow, CasWebflowConstants.VIEW_ID_ACCOUNT_DISABLED, CasWebflowConstants.VIEW_ID_ACCOUNT_DISABLED);
-            createEndState(flow, CasWebflowConstants.VIEW_ID_PASSWORD_UPDATE_SUCCESS, CasWebflowConstants.VIEW_ID_PASSWORD_UPDATE_SUCCESS);
+            createEndState(flow, CasWebflowConstants.STATE_ID_PASSWORD_UPDATE_SUCCESS, CasWebflowConstants.VIEW_ID_PASSWORD_UPDATE_SUCCESS);
 
             if (casProperties.getAuthn().getPm().isEnabled()) {
                 configure(flow, CasWebflowConstants.VIEW_ID_ACCOUNT_DISABLED);
@@ -64,6 +64,7 @@ public class PasswordManagementWebflowConfigurer extends AbstractCasWebflowConfi
             } else {
                 createViewState(flow, CasWebflowConstants.VIEW_ID_ACCOUNT_DISABLED, CasWebflowConstants.VIEW_ID_ACCOUNT_DISABLED);
                 createViewState(flow, CasWebflowConstants.VIEW_ID_EXPIRED_PASSWORD, CasWebflowConstants.VIEW_ID_EXPIRED_PASSWORD);
+                createViewState(flow, CasWebflowConstants.VIEW_ID_MUST_CHANGE_PASSWORD, CasWebflowConstants.VIEW_ID_MUST_CHANGE_PASSWORD);
             }
         }
     }
