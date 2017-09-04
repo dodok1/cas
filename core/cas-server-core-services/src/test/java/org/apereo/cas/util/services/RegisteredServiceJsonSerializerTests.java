@@ -1,5 +1,7 @@
 package org.apereo.cas.util.services;
 
+import org.apereo.cas.configuration.model.support.saml.idp.SamlIdPProperties;
+import org.apereo.cas.services.LogoutType;
 import org.apereo.cas.services.RegisteredService;
 import org.junit.Test;
 
@@ -20,7 +22,8 @@ public class RegisteredServiceJsonSerializerTests {
                 + "        \"@class\" : \"org.apereo.cas.services.RegexRegisteredService\",\n"
                 + "            \"serviceId\" : \"^https://xyz.*\",\n"
                 + "            \"name\" : \"XYZ\",\n"
-                + "            \"id\" : \"20161214\"\n"
+                + "            \"id\" : \"20161214\",\n"
+                + "            \"logoutType\" : \"FRONT_CHANNEL\"\n"
                 + "    }";
 
         final RegisteredService s = zer.from(json);
@@ -29,5 +32,7 @@ public class RegisteredServiceJsonSerializerTests {
         assertNotNull(s.getAttributeReleasePolicy());
         assertNotNull(s.getProxyPolicy());
         assertNotNull(s.getUsernameAttributeProvider());
+        assertNotNull(s.getLogoutType());
+        assertEquals(LogoutType.FRONT_CHANNEL, s.getLogoutType());
     }
 }
