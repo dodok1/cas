@@ -1,8 +1,9 @@
 package org.apereo.cas.adaptors.radius.authentication;
 
 import net.jradius.exception.TimeoutException;
+import net.jradius.packet.attribute.value.AttributeValue;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apereo.cas.adaptors.radius.TokenChangeException;
+import org.apereo.cas.adaptors.radius.AccessChallengedException;
 import org.apereo.cas.adaptors.radius.RadiusServer;
 import org.apereo.cas.adaptors.radius.RadiusUtils;
 import org.apereo.cas.authentication.Credential;
@@ -18,6 +19,7 @@ import org.springframework.webflow.execution.RequestContext;
 import org.springframework.webflow.execution.RequestContextHolder;
 
 import javax.security.auth.login.FailedLoginException;
+import java.io.Serializable;
 import java.net.SocketTimeoutException;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
@@ -66,7 +68,9 @@ public class RadiusTokenAuthenticationHandler extends AbstractPreAndPostProcessi
 
         final Pair<Boolean, Optional<Map<String, Object>>> result;
         try {
-            result = RadiusUtils.authenticate(username, password, this.servers,
+            final Serializable state = radiusCredential.getState();
+            radiusCredential.setState(null);
+            result = RadiusUtils.authenticate(username, password, state, this.servers,
                     this.failoverOnAuthenticationFailure, this.failoverOnException);
         } catch (final Exception e) {
             throw new FailedLoginException("Radius authentication failed " + e.getMessage());
@@ -76,7 +80,11 @@ public class RadiusTokenAuthenticationHandler extends AbstractPreAndPostProcessi
                     new ArrayList<>());
         }
         else if (result.getRight().isPresent()){
-            throw new TokenChangeException((String) result.getRight().get().getOrDefault("Reply-Message", null));
+            Serializable state = (Serializable) result.getRight().get().getOrDefault("State", null);
+            radiusCredential.setState(state);
+            String message = result.getRight().get().getOrDefault("Reply-Message", "?").toString();
+            radiusCredential.setMessage(message);
+            throw new AccessChallengedException(message);
         }
         throw new FailedLoginException("Radius authentication failed for user " + username);
     }
@@ -92,7 +100,7 @@ public class RadiusTokenAuthenticationHandler extends AbstractPreAndPostProcessi
             LOGGER.debug("Attempting to ping RADIUS server [{}] via simulating an authentication request. If the server responds "
                     + "successfully, mock authentication will fail correctly.", server);
             try {
-                server.authenticate(uidPsw, uidPsw);
+                server.authenticate(uidPsw, uidPsw, null);
             } catch (final TimeoutException | SocketTimeoutException e) {
                 LOGGER.debug("Server [{}] is not available", server);
                 continue;

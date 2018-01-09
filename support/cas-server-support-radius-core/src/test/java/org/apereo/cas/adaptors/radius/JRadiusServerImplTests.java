@@ -35,7 +35,7 @@ public class JRadiusServerImplTests {
     public void verifyAuthenticationSuccess() throws Exception {
         final JRadiusServerImpl server = new JRadiusServerImpl(RadiusProtocol.MSCHAPv2,
                 new RadiusClientFactory(ACCOUNTING_PORT, AUTHENTICATION_PORT, INET_ADDRESS, SECRET));
-        final RadiusResponse response = server.authenticate("casuser", "Mellon");
+        final RadiusResponse response = server.authenticate("casuser", "Mellon", null);
         assertEquals(response.getCode(), 2);
         assertFalse(response.getAttributes().isEmpty());
         assertTrue(response.getAttributes().stream().anyMatch(a -> a.getAttributeName().equals(Attr_MSCHAP2Success.NAME)));
@@ -45,7 +45,7 @@ public class JRadiusServerImplTests {
     public void verifyAuthenticationFails() throws Exception {
         final JRadiusServerImpl server = new JRadiusServerImpl(RadiusProtocol.MSCHAPv2,
                 new RadiusClientFactory(ACCOUNTING_PORT, AUTHENTICATION_PORT, INET_ADDRESS, SECRET));
-        final RadiusResponse response = server.authenticate("casuser", "badpsw");
+        final RadiusResponse response = server.authenticate("casuser", "badpsw", null);
         assertNull(response);
     }
 
@@ -55,7 +55,7 @@ public class JRadiusServerImplTests {
         final JRadiusServerImpl server = new JRadiusServerImpl(RadiusProtocol.MSCHAPv2,
                 new RadiusClientFactory(ACCOUNTING_PORT, AUTHENTICATION_PORT, 1,
                         INET_ADDRESS, "xyz"));
-        server.authenticate("xyz", "xyz");
+        server.authenticate("xyz", "xyz", null);
     }
 
     @Test
@@ -64,7 +64,7 @@ public class JRadiusServerImplTests {
         final JRadiusServerImpl server = new JRadiusServerImpl(RadiusProtocol.MSCHAPv2,
                 new RadiusClientFactory(1234, 4567, 1,
                         INET_ADDRESS, "xyz"));
-        server.authenticate("xyz", "xyz");
+        server.authenticate("xyz", "xyz", null);
     }
 
     @Test
@@ -73,6 +73,6 @@ public class JRadiusServerImplTests {
         final JRadiusServerImpl server = new JRadiusServerImpl(RadiusProtocol.MSCHAPv2,
                 new RadiusClientFactory(1234, 4567, 1,
                         "131.211.138.166", "1234"));
-        server.authenticate("xyz", "xyz");
+        server.authenticate("xyz", "xyz", null);
     }
 }

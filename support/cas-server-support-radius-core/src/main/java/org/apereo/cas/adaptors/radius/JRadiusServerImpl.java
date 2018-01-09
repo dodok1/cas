@@ -4,20 +4,10 @@ package org.apereo.cas.adaptors.radius;
 import net.jradius.client.RadiusClient;
 import net.jradius.client.auth.PAPAuthenticator;
 import net.jradius.client.auth.RadiusAuthenticator;
-import net.jradius.dictionary.Attr_NASIPAddress;
-import net.jradius.dictionary.Attr_NASIPv6Address;
-import net.jradius.dictionary.Attr_NASIdentifier;
-import net.jradius.dictionary.Attr_NASPort;
-import net.jradius.dictionary.Attr_NASPortId;
-import net.jradius.dictionary.Attr_NASPortType;
-import net.jradius.dictionary.Attr_UserName;
-import net.jradius.dictionary.Attr_UserPassword;
+import net.jradius.dictionary.*;
 import net.jradius.dictionary.vsa_redback.Attr_NASRealPort;
 import net.jradius.exception.RadiusException;
-import net.jradius.packet.AccessAccept;
-import net.jradius.packet.AccessChallenge;
-import net.jradius.packet.AccessRequest;
-import net.jradius.packet.RadiusPacket;
+import net.jradius.packet.*;
 import net.jradius.packet.attribute.AttributeFactory;
 import net.jradius.packet.attribute.AttributeList;
 import org.apache.commons.lang3.StringUtils;
@@ -26,6 +16,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
 import java.security.Security;
 import java.util.List;
 import java.security.NoSuchAlgorithmException;
@@ -118,12 +109,16 @@ public class JRadiusServerImpl implements RadiusServer {
     }
 
     @Override
-    public RadiusResponse authenticate(final String username, final String password) throws Exception {
+    public RadiusResponse authenticate(final String username, final String password, Serializable state) throws Exception {
 
         final AttributeList attributeList = new AttributeList();
         
         attributeList.add(new Attr_UserName(username));
         attributeList.add(new Attr_UserPassword(password));
+
+        if (state != null) {
+            attributeList.add(new Attr_State(state));
+        }
 
         if (StringUtils.isNotBlank(this.nasIpAddress)) {
             attributeList.add(new Attr_NASIPAddress(this.nasIpAddress));
@@ -152,6 +147,8 @@ public class JRadiusServerImpl implements RadiusServer {
         try {
             client = this.radiusClientFactory.newInstance();
             final AccessRequest request = new AccessRequest(client, attributeList);
+            LOGGER.debug("RADIUS response to [{}]: [{}]", client.getRemoteInetAddress().getCanonicalHostName(),
+                    request.toString(true, true));
             // FIXME this code should be called only in specific case of PAP protocol with RSA SecureId server
             final RadiusPacket response = authenticate(client,
                     request,
@@ -172,8 +169,9 @@ public class JRadiusServerImpl implements RadiusServer {
                 final AccessChallenge challenge = (AccessChallenge) response;
                 return new RadiusResponse(challenge.getCode(), challenge.getIdentifier(),
                         challenge.getAttributes().getAttributeList());
+            } else if (!(response instanceof AccessReject)) {
+                LOGGER.debug("Response is not recognized");
             }
-            LOGGER.debug("Response is not recognized");
         } finally {
             if (client != null) {
                 client.close();

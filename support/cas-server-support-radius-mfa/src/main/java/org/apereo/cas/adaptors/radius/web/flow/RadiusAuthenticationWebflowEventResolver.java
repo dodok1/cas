@@ -2,8 +2,9 @@ package org.apereo.cas.adaptors.radius.web.flow;
 
 import com.google.common.collect.ImmutableSet;
 import org.apereo.cas.CentralAuthenticationService;
-import org.apereo.cas.adaptors.radius.TokenChangeException;
+import org.apereo.cas.adaptors.radius.AccessChallengedException;
 import org.apereo.cas.adaptors.radius.authentication.RadiusTokenAuthenticationHandler;
+import org.apereo.cas.adaptors.radius.authentication.RadiusTokenCredential;
 import org.apereo.cas.authentication.*;
 import org.apereo.cas.authentication.principal.Service;
 import org.apereo.cas.services.MultifactorAuthenticationProviderSelector;
@@ -57,12 +58,15 @@ public class RadiusAuthenticationWebflowEventResolver extends AbstractCasWebflow
             return ImmutableSet.of(grantTicketGrantingTicketToAuthenticationResult(context, builder, service));
         } catch (final AuthenticationException e) {
             Class<? extends Throwable> error = e.getHandlerErrors().get(RadiusTokenAuthenticationHandler.class.getSimpleName());
-            boolean tokenChange = error != null && error == TokenChangeException.class;
-            context.getFlowScope().put("tokenChange", tokenChange);
-            if (tokenChange) {
-                return ImmutableSet.of(newEvent("tokenChange"));
+            boolean accessChallenged = error != null && error == AccessChallengedException.class;
+            if (accessChallenged) {
+                final Credential radiusCredential = getCredentialFromContext(context);
+                String message = radiusCredential instanceof RadiusTokenCredential ? ((RadiusTokenCredential) radiusCredential).getMessage() : "???:";
+                context.getFlowScope().put("accessChallenged", message);
+                return ImmutableSet.of(newEvent("accessChallenged"));
             }
             else {
+                context.getFlowScope().put("accessChallenged", null);
                 return ImmutableSet.of(newEvent("error", e));
             }
         } catch (final Exception e) {

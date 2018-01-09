@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.security.auth.login.FailedLoginException;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,17 +35,17 @@ public final class RadiusUtils {
      * @return the pair indicating completed login in
      * @throws Exception the exception
      */
-    public static Pair<Boolean, Optional<Map<String, Object>>> authenticate(final String username, final String password,
+    public static Pair<Boolean, Optional<Map<String, Object>>> authenticate(final String username, final String password, final Serializable state,
                                                                             final List<RadiusServer> servers,
                                                                             final boolean failoverOnAuthenticationFailure,
                                                                             final boolean failoverOnException) throws Exception {
         for (final RadiusServer radiusServer : servers) {
-            LOGGER.debug("Attempting to authenticate [{}] at [{}]", username, radiusServer);
+            LOGGER.debug("Attempting to authenticate [{}] at [{}] in state [{}]", username, radiusServer, state);
             try {
-                final RadiusResponse response = radiusServer.authenticate(username, password);
+                final RadiusResponse response = radiusServer.authenticate(username, password, state);
                 if (response != null) {
                     final Map<String, Object> attributes = new HashMap<>();
-                    response.getAttributes().forEach(attribute -> attributes.put(attribute.getAttributeName(), attribute.getValue().toString()));
+                    response.getAttributes().forEach(attribute -> attributes.put(attribute.getAttributeName(), attribute.getValue()));
                     return Pair.of(response.getCode() == 2, Optional.of(attributes));
                 }
 

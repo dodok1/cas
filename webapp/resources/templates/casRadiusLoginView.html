@@ -15,11 +15,16 @@
             </div>
 
             <div class="row fl-controls-left">
-                <label for="password" class="fl-label" th:utext="#{screen.welcome.label.password}"/>
+                <label for="password" class="fl-label">
+                    <span class="accesskey">P</span>IN
+                    <th:block th:if="${accessChallenged==null}">[+Token]:</th:block>
+                    <th:block th:if="${accessChallenged!=null}">[Token] - </th:block>
+                    <span th:if="${accessChallenged!=null}"  th:utext="${accessChallenged}"/>
+                </label>
 
                 <input type="password" class="required" id="token" size="25" tabindex="1"
                        th:field="*{token}"
-                       th:accesskey="#{screen.welcome.label.password.accesskey}" autocomplete="off"/>
+                       th:accesskey="P" autocomplete="off"/>
                 <input class="btn btn-submit" name="_eventId_submit" accesskey="l"
                        th:value="#{screen.welcome.button.login}" tabindex="4" type="submit"/>
             </div>
@@ -32,4 +37,3 @@
 </div>
 </body>
 </html>
-

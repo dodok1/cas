@@ -30,7 +30,7 @@
         <evaluate expression="radiusAuthenticationWebflowAction" />
         <transition on="success" to="success" />
         <transition on="error" to="handleError" />
-        <transition on="tokenChange" to="viewLoginFormRadius" />
+        <transition on="accessChallenged" to="viewLoginFormRadius" />
     </action-state>
 
     <action-state id="handleError">
