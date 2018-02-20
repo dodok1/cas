@@ -164,10 +164,6 @@ public class LdapAuthenticationHandler extends AbstractUsernamePasswordAuthentic
         }
         LOGGER.debug("LDAP response: [{}]", response);
 
-        if (!response.getResult() && response.getResultCode() == ResultCode.INVALID_CREDENTIALS) {
-            throw new FailedLoginException("Invalid credentials");
-        }
-
         final List<MessageDescriptor> messageList;
         final LdapPasswordPolicyConfiguration ldapPasswordPolicyConfiguration = (LdapPasswordPolicyConfiguration) super.getPasswordPolicyConfiguration();
         if (ldapPasswordPolicyConfiguration != null) {
@@ -177,6 +173,10 @@ public class LdapAuthenticationHandler extends AbstractUsernamePasswordAuthentic
         } else {
             LOGGER.debug("No ldap password policy configuration is defined");
             messageList = new ArrayList<>(0);
+        }
+
+        if (!response.getResult() && response.getResultCode() == ResultCode.INVALID_CREDENTIALS) {
+            throw new FailedLoginException("Invalid credentials");
         }
 
         if (response.getResult()) {
