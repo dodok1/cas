@@ -25,6 +25,8 @@ public class RadiusMultifactorProperties extends BaseMultifactorProviderProperti
      */
     private boolean failoverOnAuthenticationFailure;
 
+    private boolean primaryHandler = false;
+
     /**
      * RADIUS server settings.
      */
@@ -84,5 +86,13 @@ public class RadiusMultifactorProperties extends BaseMultifactorProviderProperti
 
     public void setClient(final RadiusClientProperties client) {
         this.client = client;
+    }
+
+    public boolean isPrimaryHandler() {
+        return primaryHandler;
+    }
+
+    public void setPrimaryHandler(boolean primaryHandler) {
+        this.primaryHandler = primaryHandler;
     }
 }

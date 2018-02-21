@@ -5,6 +5,8 @@ import org.apereo.cas.adaptors.radius.web.flow.RadiusAuthenticationWebflowAction
 import org.apereo.cas.adaptors.radius.web.flow.RadiusAuthenticationWebflowEventResolver;
 import org.apereo.cas.adaptors.radius.web.flow.RadiusMultifactorTrustWebflowConfigurer;
 import org.apereo.cas.adaptors.radius.web.flow.RadiusMultifactorWebflowConfigurer;
+import org.apereo.cas.authentication.AuthenticationEventExecutionPlanConfigurer;
+import org.apereo.cas.authentication.AuthenticationHandler;
 import org.apereo.cas.authentication.AuthenticationServiceSelectionPlan;
 import org.apereo.cas.authentication.AuthenticationSystemSupport;
 import org.apereo.cas.configuration.CasConfigurationProperties;
@@ -25,6 +27,7 @@ import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.StringUtils;
 import org.springframework.web.util.CookieGenerator;
 import org.springframework.webflow.config.FlowDefinitionRegistryBuilder;
 import org.springframework.webflow.definition.registry.FlowDefinitionRegistry;
@@ -103,6 +106,30 @@ public class RadiusMultifactorConfiguration {
     public CasWebflowEventResolver radiusAuthenticationWebflowEventResolver() {
         return new RadiusAuthenticationWebflowEventResolver(authenticationSystemSupport, centralAuthenticationService, servicesManager, ticketRegistrySupport,
                 warnCookieGenerator, authenticationRequestServiceSelectionStrategies, multifactorAuthenticationProviderSelector);
+    }
+
+    @ConditionalOnMissingBean(name = "radiusMultifactorPrimaryAuthenticationEventExecutionPlanConfigurer")
+    @Bean
+    public AuthenticationEventExecutionPlanConfigurer radiusMultifactorPrimaryAuthenticationEventExecutionPlanConfigurer() {
+        return plan -> {
+            final RadiusMultifactorProperties radius = casProperties.getAuthn().getMfa().getRadius();
+            if (radius.isPrimaryHandler()) {
+                plan.registerAuthenticationHandler(radiusPINAuthenticationHandler(radius));
+            }
+        };
+    }
+
+    private AuthenticationHandler radiusPINAuthenticationHandler(final RadiusMultifactorProperties radius) {
+        final RadiusAuthenticationHandler h = new RadiusAuthenticationHandler(radius.getName(), servicesManager, radiusPrincipalFactory(), radiusServers(),
+                radius.isFailoverOnException(), radius.isFailoverOnAuthenticationFailure());
+
+        h.setPasswordEncoder(PasswordEncoderUtils.newPasswordEncoder(radius.getPasswordEncoder()));
+        h.setPrincipalNameTransformer(PrincipalNameTransformerUtils.newPrincipalNameTransformer(radius.getPrincipalTransformation()));
+
+        if (passwordPolicyConfiguration != null) {
+            h.setPasswordPolicyConfiguration(passwordPolicyConfiguration);
+        }
+        return h;
     }
 
     @ConditionalOnMissingBean(name = "radiusMultifactorWebflowConfigurer")
