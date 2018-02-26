@@ -60,9 +60,9 @@ public class RadiusAuthenticationWebflowEventResolver extends AbstractCasWebflow
             Class<? extends Throwable> error = e.getHandlerErrors().get(RadiusTokenAuthenticationHandler.class.getSimpleName());
             boolean accessChallenged = error != null && error == AccessChallengedException.class;
             if (accessChallenged) {
-                final Credential radiusCredential = getCredentialFromContext(context);
-                String message = radiusCredential instanceof RadiusTokenCredential ? ((RadiusTokenCredential) radiusCredential).getMessage() : "???:";
-                context.getFlowScope().put("accessChallenged", message);
+                if (context.getFlowScope().get("accessChallenged") == null) {
+                    LOGGER.error("Radius access challenge message is not present!");
+                }
                 return ImmutableSet.of(newEvent("accessChallenged"));
             }
             else {

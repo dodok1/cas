@@ -68,8 +68,7 @@ public class RadiusTokenAuthenticationHandler extends AbstractPreAndPostProcessi
 
         final Pair<Boolean, Optional<Map<String, Object>>> result;
         try {
-            final Serializable state = radiusCredential.getState();
-            radiusCredential.setState(null);
+            final Serializable state = (Serializable) context.getFlowScope().extract("accessState");
             result = RadiusUtils.authenticate(username, password, state, this.servers,
                     this.failoverOnAuthenticationFailure, this.failoverOnException);
         } catch (final Exception e) {
@@ -81,9 +80,9 @@ public class RadiusTokenAuthenticationHandler extends AbstractPreAndPostProcessi
         }
         else if (result.getRight().isPresent()){
             Serializable state = (Serializable) result.getRight().get().getOrDefault("State", null);
-            radiusCredential.setState(state);
+            context.getFlowScope().put("accessState", state);
             String message = result.getRight().get().getOrDefault("Reply-Message", "?").toString();
-            radiusCredential.setMessage(message);
+            context.getFlowScope().put("accessChallenged", message);
             throw new AccessChallengedException(message);
         }
         throw new FailedLoginException("Radius authentication failed for user " + username);

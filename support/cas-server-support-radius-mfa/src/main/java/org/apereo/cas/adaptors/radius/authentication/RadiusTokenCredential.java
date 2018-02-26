@@ -18,15 +18,11 @@ public class RadiusTokenCredential implements Credential, Serializable {
     private static final long serialVersionUID = -7570675701132111037L;
 
     private String token;
-    private Serializable state;
-    private String message;
 
     @Override
     public String toString() {
         final ToStringBuilder builder = new ToStringBuilder(this)
                 .append("token", this.token);
-        if (state != null) builder.append(state);
-        if (message != null) builder.append(message);
         return builder.toString();
     }
 
@@ -62,22 +58,6 @@ public class RadiusTokenCredential implements Credential, Serializable {
 
     public void setToken(final String token) {
         this.token = token;
-    }
-
-    public Serializable getState() {
-        return state;
-    }
-
-    public void setState(Serializable state) {
-        this.state = state;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
     }
 
     public boolean isValid() {
