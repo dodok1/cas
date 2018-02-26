@@ -78,7 +78,7 @@ public class RadiusConfiguration {
         final RadiusServerProperties server = casProperties.getAuthn().getRadius().getServer();
 
         final Set<String> ips = getClientIps(client);
-        return getSingleRadiusServer(client, server, ips.iterator().next());
+        return ips.isEmpty() ? null : getSingleRadiusServer(client, server, ips.iterator().next());
     }
 
     private JRadiusServerImpl getSingleRadiusServer(RadiusClientProperties client, RadiusServerProperties server, String clientInetAddress) {
