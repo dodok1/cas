@@ -48,18 +48,19 @@ public final class RadiusUtils {
                     response.getAttributes().forEach(attribute -> attributes.put(attribute.getAttributeName(), attribute.getValue()));
                     return Pair.of(response.getCode() == 2, Optional.of(attributes));
                 }
-
-                if (!failoverOnAuthenticationFailure) {
-                    throw new FailedLoginException("Radius authentication failed for user " + username);
-                }
-                LOGGER.debug("failoverOnAuthenticationFailure enabled -- trying next server");
             } catch (final Exception e) {
                 if (!failoverOnException) {
                     throw e;
                 }
                 LOGGER.warn("failoverOnException enabled -- trying next server.", e);
+                continue;
             }
+            if (!failoverOnAuthenticationFailure) {
+                throw new FailedLoginException("Radius authentication failed for user " + username);
+            }
+            LOGGER.debug("failoverOnAuthenticationFailure enabled -- trying next server");
         }
-        return Pair.of(Boolean.TRUE, Optional.empty());
+        LOGGER.debug("no more servers to failover");
+        throw new FailedLoginException("Radius authentication failed for user " + username);
     }
 }
